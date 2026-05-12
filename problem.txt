@@ -1,0 +1,45 @@
+= The Problem =
+
+Systems that handle money — orders, payments, inventory — all face
+the same core tension: you want to accept submissions quickly and
+asynchronously, but the business logic that validates and persists
+them is slow, stateful, and must run exactly once per submission.
+
+The naive approach — a monolith that creates an order row during
+the HTTP request — couples the client's latency to backend write
+times, makes the database a bottleneck under load, and provides
+no natural way to retry when a validation step fails against an
+external dependency. Worse, there is no idempotency barrier:
+if the client's request is retried at the network level (a timeout
+that wasn't, a proxy replay, a user double-click), the same order
+can be inserted twice.
+
+The "fixed" version shown in most tutorials addresses retries by
+adding an idempotency table as an afterthought, but still forces
+the API into a synchronous write pattern. The database sees every
+submission. The API process holds a connection open while business
+rules execute. If any downstream service hiccups, the caller gets
+a 500 and must decide whether to retry blindly.
+
+This project treats the problem differently: decouple submission
+from processing at the protocol level. The API's only job is to
+validate the request shape, assign a correlation_id, and push the
+order onto a message broker. It returns a 202 Accepted immediately.
+The correlation_id becomes the idempotency key — a single database
+transaction consumes it the first time and rejects every subsequent
+attempt with a no-op ack.
+
+The processing side (a separate service, in Rust) owns the business
+logic and the database writes. It consumes from the broker, checks
+the idempotency barrier, validates business rules, and persists.
+If a transient error occurs (database deadlock, connection reset),
+it schedules a retry through a dedicated retry exchange with
+exponential backoff. After the maximum retry budget is exhausted,
+the message lands in a dead-letter queue for manual inspection.
+
+This is not a new architecture. It is a well-established event-driven
+pattern that most codebases fail to implement correctly because the
+plumbing — broker topology, idempotency tables, retry state machines,
+consumer acknowledgements — is tedious to write and even harder to
+reason about in a single pass. This project exists to provide a
+correct, minimal, production-ready backbone for that pattern.

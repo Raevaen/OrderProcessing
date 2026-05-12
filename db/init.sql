@@ -1,0 +1,69 @@
+-- OrderProcessing: Database Initialization
+-- PostgreSQL schema for orders, idempotency tracking, and dead-letter audit.
+
+BEGIN;
+
+-- 1. Orders table: holds the canonical processed order.
+CREATE TABLE IF NOT EXISTS orders (
+    id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    correlation_id  UUID NOT NULL UNIQUE,
+    customer_name   TEXT NOT NULL,
+    product         TEXT NOT NULL,
+    quantity        INTEGER NOT NULL CHECK (quantity > 0),
+    total_amount    DECIMAL(10,2) NOT NULL CHECK (total_amount >= 0),
+    status          VARCHAR(50) NOT NULL DEFAULT 'pending',
+    payload         JSONB NOT NULL DEFAULT '{}',
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    processed_at    TIMESTAMPTZ
+);
+
+COMMENT ON TABLE orders IS 'Processed orders ingested from the event processor.';
+COMMENT ON COLUMN orders.correlation_id IS 'Idempotency key — guaranteed unique per order submission.';
+COMMENT ON COLUMN orders.payload IS 'Full original message blob for audit/replay.';
+
+-- 2. Idempotency table: barrier that prevents duplicate processing.
+CREATE TABLE IF NOT EXISTS idempotency_keys (
+    correlation_id  UUID PRIMARY KEY,
+    status          VARCHAR(50) NOT NULL DEFAULT 'processing',
+    order_id        UUID REFERENCES orders(id) ON DELETE SET NULL,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    processed_at    TIMESTAMPTZ
+);
+
+COMMENT ON TABLE idempotency_keys IS 'Idempotency barrier — a row here means the correlation_id has been seen.';
+COMMENT ON COLUMN idempotency_keys.status IS 'processing | completed | failed';
+
+-- 3. Processing attempts: audit trail for retries and dead-letter diagnostics.
+CREATE TABLE IF NOT EXISTS processing_attempts (
+    id              BIGSERIAL PRIMARY KEY,
+    correlation_id  UUID NOT NULL,
+    attempt         INTEGER NOT NULL CHECK (attempt >= 1),
+    error_message   TEXT,
+    created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+COMMENT ON TABLE processing_attempts IS 'Per-attempt audit log for message retries.';
+
+-- 4. Indexes for common query paths.
+CREATE INDEX IF NOT EXISTS idx_orders_correlation_id ON orders (correlation_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status         ON orders (status);
+CREATE INDEX IF NOT EXISTS idx_idempotency_status    ON idempotency_keys (status);
+CREATE INDEX IF NOT EXISTS idx_attempts_correlation  ON processing_attempts (correlation_id, attempt);
+
+-- 5. Trigger to auto-update orders.updated_at.
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_orders_updated_at ON orders;
+CREATE TRIGGER trg_orders_updated_at
+    BEFORE UPDATE ON orders
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
+
+COMMIT;

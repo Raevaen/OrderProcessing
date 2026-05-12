@@ -1,0 +1,23 @@
+# Rust
+processor/target/
+**/*.rs.bk
+
+# .NET
+api/OrderProcessing.Api/bin/
+api/OrderProcessing.Api/obj/
+*.user
+*.suo
+
+# Docker
+.env
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
