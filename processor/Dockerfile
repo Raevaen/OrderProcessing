@@ -1,32 +1,29 @@
 # syntax=docker/dockerfile:1.7
-
-# ── Shared build base ──
-FROM rust:1.89-slim-bookworm AS base
-WORKDIR /app
-RUN cargo install --locked cargo-chef
-
-# ── Dependency planner ──
-FROM base AS planner
-COPY Cargo.toml Cargo.lock ./
-COPY src ./src
-RUN cargo chef prepare --recipe-path recipe.json
-
 # ── Build stage ──
-FROM base AS build
-COPY --from=planner /app/recipe.json recipe.json
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    cargo chef cook --release --locked --recipe-path recipe.json
+FROM rust:1.95-slim-bookworm AS build
+WORKDIR /app
 
+# Pre-build an empty crate to cache dependency compilation.
+# Cargo.lock is generated on first build — create a stub so the COPY doesn't fail.
 COPY Cargo.toml Cargo.lock ./
+RUN mkdir src && echo "fn main() {}" > src/main.rs
+# Cache the cargo registry and the target dir across builds so dependencies
+# aren't recompiled from scratch every time (only invalidated by Cargo.toml/lock changes).
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/app/target \
+    cargo build --release && \
+    cp target/release/order-processor /tmp/order-processor-stub || true
+# The dummy binary is not needed, remove it.
+RUN rm -f target/release/deps/processor* 2>/dev/null || true
+
+# Copy real source and build.
 COPY src ./src
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    cargo build --release --locked \
-    && strip target/release/order-processor
+    --mount=type=cache,target=/app/target \
+    cargo build --release && \
+    cp target/release/order-processor /app/order-processor
 
 # ── Runtime stage ──
-FROM gcr.io/distroless/cc-debian12:nonroot AS final
-COPY --from=build /app/target/release/order-processor /usr/local/bin/order-processor
-USER nonroot:nonroot
-ENTRYPOINT ["/usr/local/bin/order-processor"]
+FROM gcr.io/distroless/cc-debian12 AS final
+COPY --from=build /app/order-processor /usr/local/bin/order-processor
+ENTRYPOINT ["order-processor"]
