@@ -8,7 +8,7 @@ RUN dotnet restore
 
 # Publish the application.
 COPY api/OrderProcessing.Api/ .
-RUN dotnet publish -c Release -o /app --no-restore
+RUN dotnet publish -c Release -o /app 
 
 # ── Runtime stage ──
 FROM mcr.microsoft.com/dotnet/aspnet:8.0

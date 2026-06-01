@@ -5,18 +5,24 @@ using OrderProcessing.Api.Services;
 namespace OrderProcessing.Api.Controllers;
 
 /// <summary>
-/// Accepts order submissions and publishes them as events to the broker.
+/// Accepts order submissions and publishes them as events to the broker,
+/// and allows clients to check the status of previously submitted orders.
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class OrdersController : ControllerBase
 {
     private readonly MessagePublisher _publisher;
+    private readonly OrderReader _reader;
     private readonly ILogger<OrdersController> _logger;
 
-    public OrdersController(MessagePublisher publisher, ILogger<OrdersController> logger)
+    public OrdersController(
+        MessagePublisher publisher,
+        OrderReader reader,
+        ILogger<OrdersController> logger)
     {
         _publisher = publisher;
+        _reader = reader;
         _logger = logger;
     }
 
@@ -59,7 +65,33 @@ public class OrdersController : ControllerBase
             Status = "accepted"
         };
 
-        return AcceptedAtAction(nameof(CreateOrder), null, response);
+        return AcceptedAtAction(nameof(GetOrderStatus), new { id = correlationId }, response);
+    }
+
+    /// <summary>
+    /// GET /api/orders/{id} — check the status of a previously submitted order.
+    /// Accepts either the <c>correlation_id</c> or the <c>order_id</c>.
+    /// </summary>
+    /// <remarks>
+    /// Status values:
+    ///   - "accepted"   — published to broker, not yet processed
+    ///   - "processing" — idempotency claimed, being processed
+    ///   - "completed"  — persisted successfully
+    ///   - "failed"     — exhausted retries, sent to DLQ
+    ///
+    /// Returns 404 if the id is unknown.
+    /// </remarks>
+    [HttpGet("{id:guid}")]
+    [ProducesResponseType(typeof(OrderStatusResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetOrderStatus([FromRoute] Guid id, CancellationToken ct)
+    {
+        var result = await _reader.GetOrderStatusAsync(id, ct);
+
+        if (result is null)
+            return NotFound(new { error = "Order not found", id });
+
+        return Ok(result);
     }
 
     /// <summary>

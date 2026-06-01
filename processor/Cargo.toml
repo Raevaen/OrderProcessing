@@ -1,7 +1,7 @@
 [package]
 name = "order-processor"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "Event-driven order processor — consumes from RabbitMQ, persists to PostgreSQL"
 
 [dependencies]

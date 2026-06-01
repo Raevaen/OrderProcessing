@@ -47,9 +47,12 @@ services:
       RabbitMq__Port: "5672"
       RabbitMq__UserName: guest
       RabbitMq__Password: guest
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=orderprocessing;Username=postgres;Password=postgres
       ASPNETCORE_URLS: http://0.0.0.0:5000
       ASPNETCORE_ENVIRONMENT: Production
     depends_on:
+      postgres:
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     restart: unless-stopped

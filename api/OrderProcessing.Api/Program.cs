@@ -22,6 +22,7 @@ builder.Services.AddControllers()
 
 builder.Services.AddSingleton<RabbitMqConnection>();
 builder.Services.AddScoped<MessagePublisher>();
+builder.Services.AddScoped<OrderReader>();
 
 builder.Services.AddHealthChecks();
 
