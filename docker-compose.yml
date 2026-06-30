@@ -59,8 +59,8 @@ services:
 
   processor:
     build:
-      context: .
-      dockerfile: processor/Dockerfile
+      context: ./processor
+      dockerfile: Dockerfile
     environment:
       RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/%2f
       DATABASE_URL: postgres://postgres:postgres@postgres:5432/orderprocessing
