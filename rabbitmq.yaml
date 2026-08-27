@@ -1,0 +1,16 @@
+# apiVersion: v1
+# kind: Pod
+# metadata:
+#   name: rabbitmq
+#   labels:
+#     app: rabbitmq
+# spec:
+#   containers:
+#     - name: rabbitmq
+#       imagePullPolicy: IfNotPresent
+#       # Never uses only the local image and fails if it is unavailable.
+#       image: rabbitmq:3-management-alpine
+#       ports:
+#         - containerPort: 5672   # AMQP
+#         - containerPort: 15672  # Management UI
+
