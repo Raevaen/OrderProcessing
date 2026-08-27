@@ -1,6 +1,8 @@
 # OrderProcessing
 
 OrderProcessing is an event-driven order system built around a .NET API, a Rust processor, PostgreSQL, and RabbitMQ. The API accepts orders asynchronously and returns immediately with a `202 Accepted` response, while the processor validates and persists the order in the background.
+This is a learning project and it's not meant for use in production environments.
+Migrating to Kubernetes.
 
 ## Prerequisites
 
