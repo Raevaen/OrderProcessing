@@ -37,8 +37,10 @@ public class OrdersController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        // Respect client-supplied idempotency key, else generate one.
-        var correlationId = TryExtractCorrelationId() ?? Guid.NewGuid();
+        var hasClientCorrelationId = TryExtractCorrelationId(out var correlationId);
+        if (!hasClientCorrelationId)
+            correlationId = Guid.NewGuid();
+
         var orderId = Guid.NewGuid();
 
         var order = new Order
@@ -51,6 +53,12 @@ public class OrdersController : ControllerBase
             TotalAmount = request.TotalAmount,
             Timestamp = DateTime.UtcNow
         };
+
+        _logger.LogInformation(
+            "Submitting order {OrderId} with correlation {CorrelationId} (source={CorrelationSource})",
+            orderId,
+            correlationId,
+            hasClientCorrelationId ? "client-header" : "generated");
 
         _publisher.Publish(order);
 
@@ -97,9 +105,24 @@ public class OrdersController : ControllerBase
     /// <summary>
     /// Reads the <c>X-Correlation-Id</c> header for client-supplied idempotency.
     /// </summary>
-    private Guid? TryExtractCorrelationId()
+    private bool TryExtractCorrelationId(out Guid correlationId)
     {
         var header = Request.Headers["X-Correlation-Id"].FirstOrDefault();
-        return Guid.TryParse(header, out var id) ? id : null;
+
+        if (string.IsNullOrWhiteSpace(header))
+        {
+            correlationId = Guid.Empty;
+            return false;
+        }
+
+        if (Guid.TryParse(header, out correlationId))
+            return true;
+
+        _logger.LogWarning(
+            "Ignoring invalid X-Correlation-Id header value: {CorrelationHeader}",
+            header);
+
+        correlationId = Guid.Empty;
+        return false;
     }
 }

@@ -1,3 +1,8 @@
+//! Domain errors for the order pipeline.
+//! The enum carries the failure intent directly. Rust is chosen here so retryable
+//! and non-retryable failures are differentiated in the type system instead of
+//! being hidden inside single string messages.
+
 use thiserror::Error;
 use uuid::Uuid;
 

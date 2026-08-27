@@ -1,3 +1,8 @@
+//! Database access layer.
+//! `PgPool` is used instead of a single connection because the worker may process
+//! multiple messages concurrently. The pool owns the underlying connection set and
+//! the compiler ensures each borrowed value stays valid while the query executes.
+
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -24,7 +29,13 @@ pub async fn try_claim_idempotency(
     .execute(pool)
     .await?;
 
-    Ok(result.rows_affected() > 0)
+    let claimed = result.rows_affected() > 0;
+    tracing::info!(
+        correlation_id = %correlation_id,
+        claimed,
+        "Idempotency claim evaluated"
+    );
+    Ok(claimed)
 }
 
 /// Insert a processed order and update the idempotency key in a single

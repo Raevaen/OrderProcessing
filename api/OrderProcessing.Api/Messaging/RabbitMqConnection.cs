@@ -12,20 +12,32 @@ public sealed class RabbitMqConnection : IDisposable
 {
     private readonly IConnection _connection;
     private readonly IModel _declareChannel;
+    private readonly ILogger<RabbitMqConnection> _logger;
+
+    public string HostName { get; }
+    public int Port { get; }
+    public string VirtualHost { get; }
 
     public string Exchange { get; }
     public string RoutingKey { get; }
 
-    public RabbitMqConnection(IConfiguration configuration)
+    public RabbitMqConnection(
+        IConfiguration configuration,
+        ILogger<RabbitMqConnection> logger)
     {
+        _logger = logger;
         var section = configuration.GetSection("RabbitMq");
+        HostName = section["HostName"] ?? "rabbitmq";
+        Port = int.Parse(section["Port"] ?? "5672");
+        VirtualHost = section["VirtualHost"] ?? "/";
+
         var factory = new ConnectionFactory
         {
-            HostName = section["HostName"] ?? "rabbitmq",
-            Port = int.Parse(section["Port"] ?? "5672"),
+            HostName = HostName,
+            Port = Port,
             UserName = section["UserName"] ?? "guest",
             Password = section["Password"] ?? "guest",
-            VirtualHost = section["VirtualHost"] ?? "/",
+            VirtualHost = VirtualHost,
             AutomaticRecoveryEnabled = true,
             NetworkRecoveryInterval = TimeSpan.FromSeconds(5),
             RequestedHeartbeat = TimeSpan.FromSeconds(30)
@@ -38,6 +50,14 @@ public sealed class RabbitMqConnection : IDisposable
         _declareChannel = _connection.CreateModel();
 
         DeclareTopology();
+
+        _logger.LogInformation(
+            "RabbitMQ connection ready host={Host} port={Port} vhost={VirtualHost} exchange={Exchange} routing_key={RoutingKey}",
+            HostName,
+            Port,
+            VirtualHost,
+            Exchange,
+            RoutingKey);
     }
 
     /// <summary>
@@ -62,6 +82,13 @@ public sealed class RabbitMqConnection : IDisposable
         _declareChannel.ExchangeDeclare(Exchange, ExchangeType.Topic, durable: true, autoDelete: false);
         _declareChannel.QueueDeclare("orders.created.queue", durable: true, exclusive: false, autoDelete: false, args);
         _declareChannel.QueueBind("orders.created.queue", Exchange, RoutingKey);
+
+        _logger.LogInformation(
+            "RabbitMQ topology declared queue={Queue} exchange={Exchange} routing_key={RoutingKey} dlq={DeadLetterQueue}",
+            "orders.created.queue",
+            Exchange,
+            RoutingKey,
+            "orders.created.dlq");
     }
 
     /// <summary>

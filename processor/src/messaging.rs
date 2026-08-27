@@ -1,3 +1,9 @@
+//! RabbitMQ messaging layer.
+//! This file shows how Rust models AMQP metadata using typed wrappers (`FieldTable`
+//! and `AMQPValue`) instead of raw strings. The message body stays as bytes until
+//! it is decoded to UTF-8 and JSON, which is a safe and explicit boundary between
+//! transport data and application data.
+
 use lapin::{
     options::*,
     types::{AMQPValue, FieldTable},

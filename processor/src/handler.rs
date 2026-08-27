@@ -1,3 +1,9 @@
+//! RabbitMQ delivery handler.
+//! It converts raw bytes into structured data and then branches on the outcome with
+//! `match`. This pattern is idiomatic Rust for state-machine style work: parse,
+//! validate, retry, or dead-letter, with each branch explicitly visible to the
+//! reader.
+
 use std::str;
 
 use lapin::{message::Delivery, Channel};
@@ -49,11 +55,25 @@ pub async fn handle_delivery(
         Ok(()) => {
             tracing::info!(correlation_id = %order.correlation_id, "Processed OK");
             let _ = messaging::ack(channel, tag).await;
+            tracing::info!(
+                correlation_id = %order.correlation_id,
+                delivery_tag = tag,
+                "ACK sent after successful processing"
+            );
         }
 
         Err(e) if matches!(e, crate::error::ProcessingError::AlreadyProcessed(_)) => {
-            tracing::info!(correlation_id = %order.correlation_id, "Idempotent — already processed");
+            tracing::info!(
+                correlation_id = %order.correlation_id,
+                order_id = %order.order_id,
+                "Idempotent — already processed"
+            );
             let _ = messaging::ack(channel, tag).await;
+            tracing::info!(
+                correlation_id = %order.correlation_id,
+                delivery_tag = tag,
+                "ACK sent for duplicate message"
+            );
         }
 
         Err(e) if e.is_transient() => {

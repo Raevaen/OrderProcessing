@@ -1,3 +1,8 @@
+//! Business logic and validation for each order.
+//! The core function uses references (`&OrderMessage`) to avoid moving the message
+//! around while still allowing safe validation and persistence. The compiler
+//! enforces that all borrowed data is valid for the duration of the function.
+
 use sqlx::PgPool;
 use tracing;
 

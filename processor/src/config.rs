@@ -1,3 +1,8 @@
+//! Configuration loader for the service.
+//! This file keeps runtime values as a typed `Config` struct instead of scattered
+//! globals. The `String` values live on the heap, while the struct itself stays on
+//! the stack; the compiler tracks ownership and lifetimes for each field.
+
 use std::env;
 
 /// Runtime configuration read from environment variables (12-factor style).

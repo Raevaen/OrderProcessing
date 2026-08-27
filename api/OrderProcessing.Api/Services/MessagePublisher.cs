@@ -34,6 +34,13 @@ public sealed class MessagePublisher
         properties.ContentType = "application/json";
         properties.Timestamp = new AmqpTimestamp(DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
+        _logger.LogInformation(
+            "Publishing order {OrderId} correlation {CorrelationId} to exchange={Exchange} routing_key={RoutingKey}",
+            order.OrderId,
+            order.CorrelationId,
+            _connection.Exchange,
+            _connection.RoutingKey);
+
         channel.BasicPublish(
             exchange: _connection.Exchange,
             routingKey: _connection.RoutingKey,

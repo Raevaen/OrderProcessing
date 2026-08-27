@@ -1,3 +1,9 @@
+//! Application entry point.
+//! The project uses Tokio for async work, `Arc` to share the channel/pool/config
+//! across concurrent tasks, and `tokio::select!` to cancel gracefully on Ctrl+C.
+//! Rust's ownership rules keep the shared objects valid while multiple tasks read
+//! from the same runtime state.
+
 use std::sync::Arc;
 
 use futures_util::StreamExt;

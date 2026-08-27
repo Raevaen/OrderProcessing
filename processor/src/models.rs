@@ -1,3 +1,9 @@
+//! Rust data contracts used across the processor.
+//! These structs use strong types (`Uuid`, `Decimal`, `DateTime`) so the message
+//! format is precise and the compiler prevents accidental misuse of IDs, money,
+//! and timestamps. Strings and nested JSON values allocate on the heap; the
+//! struct still remains cheap to move around by value.
+
 use chrono::{DateTime, Utc};
 use rust_decimal::Decimal;
 use serde::{Deserialize, Serialize};
