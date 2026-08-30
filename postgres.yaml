@@ -42,10 +42,6 @@ spec:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
               subPath: postgres
-          volumes:
-            - name: postgres-storage
-              persistentVolumeClaim:
-                claimName: postgres-pvc
           livenessProbe:
             tcpSocket:
               port: postgresport
@@ -56,6 +52,10 @@ spec:
               command: ["pg_isready", "-U", "postgres"]
             initialDelaySeconds: 10
             periodSeconds: 5
+      volumes:
+        - name: postgres-storage
+          persistentVolumeClaim:
+            claimName: postgres-pvc
 
 ---
 apiVersion: v1
