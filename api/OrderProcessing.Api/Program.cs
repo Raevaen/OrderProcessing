@@ -1,5 +1,8 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using OrderProcessing.Api.Health;
 using OrderProcessing.Api.Messaging;
 using OrderProcessing.Api.Services;
 
@@ -24,12 +27,28 @@ builder.Services.AddSingleton<RabbitMqConnection>();
 builder.Services.AddScoped<MessagePublisher>();
 builder.Services.AddScoped<OrderReader>();
 
-builder.Services.AddHealthChecks();
+builder.Services.AddHealthChecks()
+    .AddCheck<PostgresHealthCheck>("postgres", tags: ["ready"])
+    .AddCheck<RabbitMqHealthCheck>("rabbitmq", tags: ["ready"]);
 
 var app = builder.Build();
 
 // --- Middleware ---
 app.MapControllers();
+
+// Liveness: is the process itself up? No dependency checks.
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = true
+});
+
+// Readiness: can the API actually serve traffic (Postgres + RabbitMQ reachable)?
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
+
+// Back-compat catch-all: runs every registered check.
 app.MapHealthChecks("/health");
 
 app.Run();
