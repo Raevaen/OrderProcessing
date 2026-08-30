@@ -1,4 +1,3 @@
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -17,6 +16,13 @@ spec:
         - name: postgres
           imagePullPolicy: IfNotPresent
           image: postgres:16-alpine
+          env:
+            - name: POSTGRES_USER
+              value: postgres
+            - name: POSTGRES_PASSWORD
+              value: postgres
+            - name: POSTGRES_DB
+              value: orderprocessing
           ports:
             - name: postgresport
               containerPort: 5432
@@ -26,9 +32,8 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 10
           readinessProbe:
-            httpGet:
-              path: /rpc/health_check
-              port: management
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
             initialDelaySeconds: 10
             periodSeconds: 5
 
