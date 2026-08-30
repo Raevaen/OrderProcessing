@@ -39,7 +39,7 @@ app.MapControllers();
 // Liveness: is the process itself up? No dependency checks.
 app.MapHealthChecks("/health/live", new HealthCheckOptions
 {
-    Predicate = true
+    Predicate = check => !check.Tags.Contains("ready")
 });
 
 // Readiness: can the API actually serve traffic (Postgres + RabbitMQ reachable)?
