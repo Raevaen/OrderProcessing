@@ -105,3 +105,6 @@ kubectl delete deployment postgres
 kubectl delete pvc postgres-pvc
 kubectl apply -f postgres.yaml
 ```
+> Created OrderApi deployment
+- image must be built within minikube
+- readinessprobe fails, WIP

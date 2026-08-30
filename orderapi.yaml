@@ -1,0 +1,69 @@
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-api
+  template:
+    metadata:
+      labels:
+        app: order-api
+    spec:
+      containers:
+        - name: order-api
+          imagePullPolicy: IfNotPresent
+          image: orderprocessing-api:latest 
+          ports:
+            - name: http
+              containerPort: 5000
+          env:
+            - name: RabbitMq__HostName
+              value: rabbitmq
+            - name: RabbitMq__Port
+              value: "5672"
+            - name: RabbitMq__UserName
+              value: guest
+            - name: RabbitMq__Password
+              value: guest
+            - name: RabbitMq__VirtualHost
+              value: /
+            - name: RabbitMq__Exchange
+              value: orders.exchange
+            - name: RabbitMq__RoutingKey
+              value: order.created
+            - name: ConnectionStrings__Postgres
+              value: Host=postgres;Port=5432;Database=orderprocessing;Username=postgres;Password=postgres
+            - name: ASPNETCORE_URLS
+              value: http://+:5000
+            - name: ASPNETCORE_ENVIRONMENT
+              value: Production
+          livenessProbe:
+            httpGet:
+              path: /api/health/live
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: order-api
+spec:
+  selector:
+    app: order-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
+  type: LoadBalancer
