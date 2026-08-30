@@ -90,3 +90,18 @@ docker compose down -v
 ```
 
 This stops all containers and removes the PostgreSQL volume created for the database.
+
+
+# Elevation to Kubernetes
+> Created rabbitmq deployment
+
+> Created Postgres deployment
+- Added persistence
+- Added ConfigMap
+- Removed Deployment and pvc to have a clean postgres/data folder and allow initdb to execute the script in the ConfigMap
+- Recreated deployment and pvc
+```bash 
+kubectl delete deployment postgres
+kubectl delete pvc postgres-pvc
+kubectl apply -f postgres.yaml
+```
