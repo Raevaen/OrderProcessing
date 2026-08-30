@@ -1,3 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -26,6 +38,14 @@ spec:
           ports:
             - name: postgresport
               containerPort: 5432
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+              subPath: postgres
+          volumes:
+            - name: postgres-storage
+              persistentVolumeClaim:
+                claimName: postgres-pvc
           livenessProbe:
             tcpSocket:
               port: postgresport
