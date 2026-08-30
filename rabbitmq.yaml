@@ -42,12 +42,12 @@ spec:
               port: amqp
             initialDelaySeconds: 30
             periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /api/health/checks/is-in-service
-              port: management
-            initialDelaySeconds: 10
-            periodSeconds: 5
+          # readinessProbe:
+          #   httpGet:
+          #     path: /api/healthchecks/node
+          #     port: management
+          #   initialDelaySeconds: 10
+          #   periodSeconds: 5
 
 ---
 apiVersion: v1
