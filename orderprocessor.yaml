@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: order-processor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: order-processor
+  template:
+    metadata:
+      labels:
+        app: order-processor
+    spec:
+      containers:
+        - name: order-processor
+          image: orderprocessing-processor:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: RABBITMQ_URL
+              value: "amqp://guest:guest@rabbitmq:5672/%2F"
+            - name: DATABASE_URL
+              value: "postgresql://orderuser:orderpass123@postgres:5432/orderdb"
+            - name: MAIN_QUEUE
+              value: "orders.created.queue"
+            - name: RETRY_EXCHANGE
+              value: "orders.retry"
+            - name: DLX_EXCHANGE
+              value: "orders.dlx"
+            - name: DLQ_QUEUE
+              value: "orders.created.dlq"
+            - name: MAX_RETRIES
+              value: "5"
+            - name: BASE_BACKOFF_MS
+              value: "1000"
+            - name: RUST_LOG
+              value: "info,order_processor=debug"
+          # No health check as this is a long-running worker that consumes messages
+          # If it crashes, the pod will restart automatically via the Deployment

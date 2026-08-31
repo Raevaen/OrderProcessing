@@ -107,4 +107,6 @@ kubectl apply -f postgres.yaml
 ```
 > Created OrderApi deployment
 - image must be built within minikube
-- readinessprobe fails, WIP
+- liveness and readiness probes succeed
+
+> Created Processor deployment
