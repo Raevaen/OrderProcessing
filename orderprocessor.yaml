@@ -16,6 +16,13 @@ spec:
         - name: order-processor
           image: orderprocessing-processor:latest
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              cpu: 10m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
           env:
             - name: RABBITMQ_URL
               value: "amqp://guest:guest@rabbitmq:5672/%2F"

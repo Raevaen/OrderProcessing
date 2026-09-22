@@ -18,6 +18,13 @@ spec:
         - name: order-api
           imagePullPolicy: IfNotPresent
           image: orderprocessing-api:latest 
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
           ports:
             - name: http
               containerPort: 5000
