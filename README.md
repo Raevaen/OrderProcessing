@@ -44,10 +44,10 @@ Submit a new order:
 curl -s -X POST http://localhost:5000/api/orders \
   -H "Content-Type: application/json" \
   -d '{
-    "customer_name": "Alice Johnson",
+    "customerName": "Alice Johnson",
     "product": "Laptop",
     "quantity": 1,
-    "total_amount": 1299.99
+    "totalAmount": 1299.99
   }'
 ```
 
@@ -74,10 +74,10 @@ curl -s -X POST http://localhost:5000/api/orders \
   -H "Content-Type: application/json" \
   -H "X-Correlation-Id: 123e4567-e89b-12d3-a456-426614174000" \
   -d '{
-    "customer_name": "Alice Johnson",
+    "customerName": "Alice Johnson",
     "product": "Laptop",
     "quantity": 1,
-    "total_amount": 1299.99
+    "totalAmount": 1299.99
   }'
 ```
 
@@ -111,9 +111,43 @@ kubectl apply -f postgres.yaml
 
 > Created Processor deployment
 
+Update: I moved from Docker + minikube to OrbStack. It simplified the image build and deployment
 ```bash 
-eval $(minikube docker-env)
-minikube image load orderprocessing-processor:latest 2>&1
 docker build -f api/Dockerfile -t orderprocessing-api:latest .
+kubectl rollout restart deployment/order-api
+kubectl rollout status deployment/order-api
 ```
 
+
+> E2E testing
+Expose endpoint:
+```bash
+kubectl port-forward service/order-api 5000:80
+
+curl -i http://localhost:5000/health/ready
+```
+
+```bash
+curl -i -X POST http://localhost:5000/api/orders \
+  -H "Content-Type: application/json" \
+  -H "X-Correlation-Id: 11111111-1111-1111-1111-111111111111" \
+  -d '{
+    "customerName": "Alice Smith",
+    "product": "Keyboard",
+    "quantity": 2,
+    "totalAmount": 149.98
+  }'
+```
+```bash
+curl -i http://localhost:5000/api/orders/11111111-1111-1111-1111-111111111111
+
+# malformed request should fail
+curl -i -X POST http://localhost:5000/api/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerName": "",
+    "product": "",
+    "quantity": 0,
+    "totalAmount": 0
+  }'
+```
