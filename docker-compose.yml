@@ -4,9 +4,9 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: orderprocessing
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
     ports:
       - "5432:5432"
     volumes:
@@ -24,8 +24,8 @@ services:
       - "5672:5672"   # AMQP
       - "15672:15672" # Management UI
     environment:
-      RABBITMQ_DEFAULT_USER: guest
-      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME:?Set RABBITMQ_USERNAME in .env}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
       interval: 5s
@@ -43,9 +43,9 @@ services:
     environment:
       RabbitMq__HostName: rabbitmq
       RabbitMq__Port: "5672"
-      RabbitMq__UserName: guest
-      RabbitMq__Password: guest
-      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=orderprocessing;Username=postgres;Password=postgres
+      RabbitMq__UserName: ${RABBITMQ_USERNAME:?Set RABBITMQ_USERNAME in .env}
+      RabbitMq__Password: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+      ConnectionStrings__Postgres: Host=postgres;Port=5432;Database=${POSTGRES_DB:?Set POSTGRES_DB in .env};Username=${POSTGRES_USER:?Set POSTGRES_USER in .env};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       ASPNETCORE_URLS: http://0.0.0.0:5000
       ASPNETCORE_ENVIRONMENT: Production
     depends_on:
@@ -60,8 +60,8 @@ services:
       context: ./processor
       dockerfile: Dockerfile
     environment:
-      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672/%2f
-      DATABASE_URL: postgres://postgres:postgres@postgres:5432/orderprocessing
+      RABBITMQ_URL: amqp://${RABBITMQ_USERNAME:?Set RABBITMQ_USERNAME in .env}:${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}@rabbitmq:5672/%2f
+      DATABASE_URL: postgres://${POSTGRES_USER:?Set POSTGRES_USER in .env}:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}@postgres:5432/${POSTGRES_DB:?Set POSTGRES_DB in .env}
       MAX_RETRIES: "5"
       BASE_BACKOFF_MS: "1000"
       RUST_LOG: info

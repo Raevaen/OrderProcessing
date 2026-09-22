@@ -34,9 +34,15 @@ spec:
             - name: RabbitMq__Port
               value: "5672"
             - name: RabbitMq__UserName
-              value: guest
+              valueFrom:
+                secretKeyRef:
+                  name: orderprocessing-secrets
+                  key: RABBITMQ_USERNAME
             - name: RabbitMq__Password
-              value: guest
+              valueFrom:
+                secretKeyRef:
+                  name: orderprocessing-secrets
+                  key: RABBITMQ_PASSWORD
             - name: RabbitMq__VirtualHost
               value: /
             - name: RabbitMq__Exchange
@@ -44,7 +50,10 @@ spec:
             - name: RabbitMq__RoutingKey
               value: order.created
             - name: ConnectionStrings__Postgres
-              value: Host=postgres;Port=5432;Database=orderprocessing;Username=postgres;Password=postgres
+              valueFrom:
+                secretKeyRef:
+                  name: orderprocessing-secrets
+                  key: POSTGRES_CONNECTION_STRING
             - name: ASPNETCORE_URLS
               value: http://+:5000
             - name: ASPNETCORE_ENVIRONMENT

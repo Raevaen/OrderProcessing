@@ -93,6 +93,17 @@ This stops all containers and removes the PostgreSQL volume created for the data
 
 
 # Elevation to Kubernetes
+
+## Secrets
+`postgres.yaml`, `rabbitmq.yaml`, `orderapi.yaml`, and `orderprocessor.yaml` read credentials
+from a Kubernetes `Secret` named `orderprocessing-secrets` instead of hardcoding them. Create
+(or refresh) it from your local `.env` before applying any manifest, and again whenever a value
+in `.env` changes:
+```bash
+cp .env.example .env   # first time only, then fill in real values
+./k8s/create-secrets.sh
+```
+
 > Created rabbitmq deployment
 
 > Created Postgres deployment

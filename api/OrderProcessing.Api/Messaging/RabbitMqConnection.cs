@@ -35,8 +35,10 @@ public sealed class RabbitMqConnection : IDisposable
         {
             HostName = HostName,
             Port = Port,
-            UserName = section["UserName"] ?? "guest",
-            Password = section["Password"] ?? "guest",
+            UserName = section["UserName"]
+                ?? throw new InvalidOperationException("RabbitMq:UserName is not configured"),
+            Password = section["Password"]
+                ?? throw new InvalidOperationException("RabbitMq:Password is not configured"),
             VirtualHost = VirtualHost,
             AutomaticRecoveryEnabled = true,
             NetworkRecoveryInterval = TimeSpan.FromSeconds(5),

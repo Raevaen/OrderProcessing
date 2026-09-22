@@ -6,7 +6,6 @@
 use std::env;
 
 /// Runtime configuration read from environment variables (12-factor style).
-/// Falls back to defaults suitable for the docker-compose setup.
 #[derive(Debug, Clone)]
 pub struct Config {
     pub rabbitmq_url: String,
@@ -23,10 +22,9 @@ impl Config {
     pub fn from_env() -> Self {
         Self {
             rabbitmq_url: env::var("RABBITMQ_URL")
-                .unwrap_or_else(|_| "amqp://guest:guest@rabbitmq:5672/%2f".into()),
-            database_url: env::var("DATABASE_URL").unwrap_or_else(|_| {
-                "postgres://postgres:postgres@postgres:5432/orderprocessing".into()
-            }),
+                .expect("RABBITMQ_URL must be configured"),
+            database_url: env::var("DATABASE_URL")
+                .expect("DATABASE_URL must be configured"),
             main_queue: env::var("MAIN_QUEUE")
                 .unwrap_or_else(|_| "orders.created.queue".into()),
             retry_exchange: env::var("RETRY_EXCHANGE")
