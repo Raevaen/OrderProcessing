@@ -17,7 +17,13 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 RUN rm -f target/release/deps/processor* 2>/dev/null || true
 
 # Copy real source and build.
+# The checked-out files keep their original (older) git mtimes, which can be
+# older than the dummy src/main.rs written above. Cargo's freshness check only
+# recompiles when a source file's mtime is newer than what it last recorded, so
+# without this touch it can wrongly treat the real source as unchanged and
+# silently reuse the dummy binary compiled in the previous step.
 COPY src ./src
+RUN find src -exec touch {} +
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/app/target \
     cargo build --release && \

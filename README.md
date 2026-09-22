@@ -110,3 +110,10 @@ kubectl apply -f postgres.yaml
 - liveness and readiness probes succeed
 
 > Created Processor deployment
+
+```bash 
+eval $(minikube docker-env)
+minikube image load orderprocessing-processor:latest 2>&1
+docker build -f api/Dockerfile -t orderprocessing-api:latest .
+```
+
