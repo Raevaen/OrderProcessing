@@ -11,6 +11,9 @@ api/OrderProcessing.Api/obj/
 # Docker
 .env
 
+# Local Azure App Onboard session artifacts
+.copilot-azure/
+
 # IDE
 .vs/
 .vscode/
