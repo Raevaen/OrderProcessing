@@ -25,9 +25,15 @@ spec:
               memory: 128Mi
           env:
             - name: RABBITMQ_URL
-              value: "amqp://guest:guest@rabbitmq:5672/%2F"
+              valueFrom:
+                secretKeyRef:
+                  name: orderprocessing-secrets
+                  key: RABBITMQ_URL
             - name: DATABASE_URL
-              value: "postgresql://postgres:postgres@postgres:5432/orderprocessing"
+              valueFrom:
+                secretKeyRef:
+                  name: orderprocessing-secrets
+                  key: DATABASE_URL
             - name: MAIN_QUEUE
               value: "orders.created.queue"
             - name: RETRY_EXCHANGE
